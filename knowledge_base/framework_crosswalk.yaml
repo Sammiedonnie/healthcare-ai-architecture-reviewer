@@ -1,0 +1,105 @@
+# framework_crosswalk.yaml
+# Maps each control id (from controls_catalog.yaml) to its citations
+# across all supported compliance and security frameworks.
+# "default_severity" is used when a control is missing, unless overridden per-component later.
+
+crosswalk:
+
+  private_endpoint:
+    default_severity: critical
+    hipaa: "§164.312(e)(1) Transmission Security"
+    nist_800_53: ["SC-8", "SC-13"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1590: Gather Victim Network Information"
+    mitre_atlas: "AML.T0025: Exfiltration via ML Inference API"
+
+  customer_managed_keys:
+    default_severity: medium
+    hipaa: "§164.312(a)(2)(iv) Encryption and Decryption"
+    nist_800_53: ["SC-12", "SC-28"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1552: Unsecured Credentials"
+    mitre_atlas: "AML.T0025: Exfiltration via ML Inference API"
+
+  managed_identity:
+    default_severity: medium
+    hipaa: "§164.312(d) Person or Entity Authentication"
+    nist_800_53: ["IA-2", "IA-5"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "GOVERN 4.1"
+    mitre_attack: "T1078: Valid Accounts"
+    mitre_atlas: "AML.T0012: Valid Accounts"
+
+  prompt_injection_filtering:
+    default_severity: high
+    hipaa: "§164.312(c)(1) Integrity"
+    nist_800_53: ["SI-10"]
+    owasp_llm_top10: "LLM01: Prompt Injection"
+    nist_ai_rmf: "MANAGE 4.1"
+    mitre_attack: "T1565: Data Manipulation"
+    mitre_atlas: "AML.T0051: LLM Prompt Injection"
+
+  diagnostic_logging:
+    default_severity: medium
+    hipaa: "§164.312(b) Audit Controls"
+    nist_800_53: ["AU-2", "AU-6"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MEASURE 2.7"
+    mitre_attack: "T1562: Impair Defenses"
+    mitre_atlas: "AML.T0024: Exfiltration via Cyber Means"
+
+  encryption_at_rest:
+    default_severity: high
+    hipaa: "§164.312(a)(2)(iv) Encryption and Decryption"
+    nist_800_53: ["SC-28"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1530: Data from Cloud Storage"
+    mitre_atlas: "AML.T0025: Exfiltration via ML Inference API"
+
+  soft_delete_versioning:
+    default_severity: medium
+    hipaa: "§164.312(c)(1) Integrity"
+    nist_800_53: ["CP-9", "SI-12"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1485: Data Destruction"
+    mitre_atlas: "AML.T0059: Erode Dataset Integrity"
+
+  sas_token_restrictions:
+    default_severity: high
+    hipaa: "§164.312(a)(1) Access Control"
+    nist_800_53: ["AC-3", "AC-6"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1078: Valid Accounts"
+    mitre_atlas: "AML.T0012: Valid Accounts"
+
+  conditional_access:
+    default_severity: high
+    hipaa: "§164.312(a)(1) Access Control"
+    nist_800_53: ["AC-2", "AC-3"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "GOVERN 4.1"
+    mitre_attack: "T1078: Valid Accounts"
+    mitre_atlas: "AML.T0012: Valid Accounts"
+
+  pim:
+    default_severity: medium
+    hipaa: "§164.308(a)(4) Information Access Management"
+    nist_800_53: ["AC-6"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "GOVERN 4.1"
+    mitre_attack: "T1078: Valid Accounts"
+    mitre_atlas: "AML.T0012: Valid Accounts"
+
+  break_glass_accounts:
+    default_severity: low
+    hipaa: "§164.308(a)(7) Contingency Plan"
+    nist_800_53: ["CP-2", "AC-2"]
+    owasp_llm_top10: "N/A"
+    nist_ai_rmf: "GOVERN 4.1"
+    mitre_attack: "T1078: Valid Accounts"
+    mitre_atlas: "N/A"

@@ -1,0 +1,53 @@
+# phi_indicators.yaml
+# Keywords used to flag potential Protected Health Information (PHI)
+# within an architecture description's data flow text.
+# This is a simple keyword scan, not a clinical NLP model.
+
+phi_indicators:
+  - term: "patient name"
+    category: identifier
+    risk_note: "Direct identifier; high sensitivity under HIPAA Safe Harbor."
+
+  - term: "mrn"
+    category: identifier
+    risk_note: "Medical Record Number; unique patient identifier."
+
+  - term: "date of birth"
+    category: identifier
+    risk_note: "Direct identifier; commonly combined with other fields to re-identify a patient."
+
+  - term: "dob"
+    category: identifier
+    risk_note: "Direct identifier; commonly combined with other fields to re-identify a patient."
+
+  - term: "diagnosis"
+    category: clinical
+    risk_note: "Clinical information describing a patient's medical condition."
+
+  - term: "medical history"
+    category: clinical
+    risk_note: "Aggregated clinical information; high sensitivity."
+
+  - term: "clinical note"
+    category: clinical
+    risk_note: "Unstructured clinical documentation; likely to contain multiple PHI elements."
+
+  - term: "visit summary"
+    category: clinical
+    risk_note: "Generated clinical documentation; likely to contain multiple PHI elements."
+
+  - term: "lab result"
+    category: clinical
+    risk_note: "Clinical test data tied to an individual patient."
+
+  - term: "insurance"
+    category: financial
+    risk_note: "Financial/insurance information often paired with clinical identifiers."
+
+  - term: "social security"
+    category: identifier
+    risk_note: "Direct identifier; extremely high sensitivity."
+
+  - term: "patient"
+    category: general
+    risk_note: "General reference suggesting patient-level data may be present in this flow."

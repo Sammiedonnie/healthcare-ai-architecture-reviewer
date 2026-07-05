@@ -1,0 +1,66 @@
+# controls_catalog.yaml
+# Defines the required security controls per component.
+# "id" values here are referenced later by framework_crosswalk.yaml.
+
+controls:
+
+  azure_openai:
+    - id: private_endpoint
+      name: "Private Endpoint"
+      description: "Restricts network access to a private connection instead of the public internet."
+    - id: customer_managed_keys
+      name: "Customer Managed Keys"
+      description: "Encryption keys are owned and controlled by the organization, not the cloud provider."
+    - id: managed_identity
+      name: "Managed Identity"
+      description: "Service authenticates using an Azure-managed identity instead of stored credentials."
+    - id: prompt_injection_filtering
+      name: "Prompt Injection Filtering"
+      description: "Input filtering to detect and block malicious or manipulative prompt content."
+    - id: diagnostic_logging
+      name: "Diagnostic Logging"
+      description: "Detailed logs of requests and responses are captured for audit and detection."
+
+  blob_storage:
+    - id: private_endpoint
+      name: "Private Endpoint"
+      description: "Restricts network access to a private connection instead of the public internet."
+    - id: encryption_at_rest
+      name: "Encryption at Rest"
+      description: "Stored data is encrypted while sitting in the storage account."
+    - id: soft_delete_versioning
+      name: "Soft Delete / Versioning"
+      description: "Deleted or overwritten data can be recovered within a retention window."
+    - id: sas_token_restrictions
+      name: "SAS Token Restrictions"
+      description: "Shared access signature tokens are scoped, time-limited, and restricted in permission."
+
+  entra_id:
+    - id: conditional_access
+      name: "Conditional Access"
+      description: "Access policies enforce conditions such as device compliance or location."
+    - id: pim
+      name: "Privileged Identity Management (PIM)"
+      description: "Privileged roles are time-bound and require approval rather than being permanently assigned."
+    - id: break_glass_accounts
+      name: "Break Glass Accounts"
+      description: "Emergency access accounts exist and are monitored in case of identity system lockout."
+
+  key_vault:
+    - id: rbac
+      name: "RBAC"
+      description: "Role-based access control governs who can read or manage secrets and keys."
+    - id: soft_delete
+      name: "Soft Delete"
+      description: "Deleted secrets/keys can be recovered within a retention window."
+    - id: purge_protection
+      name: "Purge Protection"
+      description: "Prevents permanent deletion of secrets/keys before the retention period ends."
+
+  sentinel:
+    - id: detection_rules
+      name: "Detection Rules"
+      description: "Automated rules exist to flag suspicious activity across connected data sources."
+    - id: log_retention
+      name: "Log Retention"
+      description: "Logs are retained for a defined period sufficient for investigation and compliance."

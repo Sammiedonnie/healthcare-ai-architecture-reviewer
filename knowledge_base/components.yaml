@@ -1,0 +1,70 @@
+# components.yaml
+# Defines every system the reviewer can detect in an architecture description.
+# "keywords" = text patterns matched against user input (case-insensitive).
+
+components:
+  - id: epic_ehr
+    name: Epic EHR
+    category: ehr_system
+    keywords: ["epic", "epic ehr", "epic emr"]
+    description: "Electronic health record system; primary source of patient clinical data."
+
+  - id: cerner_ehr
+    name: Cerner
+    category: ehr_system
+    keywords: ["cerner", "oracle health"]
+    description: "Electronic health record system; primary source of patient clinical data."
+
+  - id: azure_openai
+    name: Azure OpenAI
+    category: ai_service
+    keywords: ["azure openai", "openai service", "gpt", "llm"]
+    description: "Managed AI service used for tasks such as clinical note summarization."
+
+  - id: blob_storage
+    name: Azure Blob Storage
+    category: storage
+    keywords: ["blob storage", "azure blob", "blob container"]
+    description: "Object storage; commonly used to hold generated summaries or documents."
+
+  - id: azure_sql
+    name: Azure SQL
+    category: database
+    keywords: ["azure sql", "sql database", "sql server"]
+    description: "Relational database service used for structured application data."
+
+  - id: azure_functions
+    name: Azure Functions
+    category: compute
+    keywords: ["azure functions", "function app", "serverless function"]
+    description: "Serverless compute used for lightweight processing or automation tasks."
+
+  - id: entra_id
+    name: Microsoft Entra ID
+    category: identity
+    keywords: ["entra id", "azure ad", "azure active directory"]
+    description: "Identity and access management platform controlling authentication and authorization."
+
+  - id: api_management
+    name: Azure API Management
+    category: gateway
+    keywords: ["api management", "apim", "api gateway"]
+    description: "Gateway that manages, secures, and routes API traffic between systems."
+
+  - id: key_vault
+    name: Azure Key Vault
+    category: secrets
+    keywords: ["key vault", "azure key vault"]
+    description: "Secure storage for secrets, keys, and certificates."
+
+  - id: sentinel
+    name: Microsoft Sentinel
+    category: monitoring
+    keywords: ["sentinel", "azure sentinel", "siem"]
+    description: "Cloud-native SIEM used for security monitoring, detection, and alerting."
+
+  - id: defender_cloud
+    name: Defender for Cloud
+    category: monitoring
+    keywords: ["defender for cloud", "microsoft defender"]
+    description: "Cloud security posture management and workload protection service."
