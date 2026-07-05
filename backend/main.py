@@ -2,6 +2,7 @@
 # FastAPI backend for the Healthcare AI Architecture Reviewer.
 # Chunk 2: component detection
 # Chunk 3: control evaluation + findings engine
+# Chunk 4: PHI detection + risk scoring
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,7 @@ KNOWLEDGE_BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "knowledge_b
 def load_yaml(filename):
     """Generic helper to load any YAML file from the knowledge_base folder."""
     file_path = os.path.join(KNOWLEDGE_BASE_PATH, filename)
-    with open(file_path, "r",encoding="utf-8") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -39,6 +40,10 @@ def load_controls_catalog():
 
 def load_crosswalk():
     return load_yaml("framework_crosswalk.yaml")["crosswalk"]
+
+
+def load_phi_indicators():
+    return load_yaml("phi_indicators.yaml")["phi_indicators"]
 
 
 # ---------- Chunk 2: component detection ----------
@@ -74,20 +79,45 @@ def detect_components(payload: ArchitectureInput):
     }
 
 
+# ---------- Chunk 4: PHI detection ----------
+
+@app.post("/phi-scan")
+def phi_scan(payload: ArchitectureInput):
+    """
+    Scans the architecture description text for PHI indicator keywords.
+    This is a keyword match, not a clinical NLP model, so results are
+    consistent and explainable — same input always gives same output.
+    """
+    text = payload.description.lower()
+    indicators = load_phi_indicators()
+
+    matches = []
+    for indicator in indicators:
+        if indicator["term"].lower() in text:
+            matches.append({
+                "term": indicator["term"],
+                "category": indicator["category"],
+                "risk_note": indicator["risk_note"]
+            })
+
+    return {
+        "phi_matches": matches,
+        "count": len(matches)
+    }
+
+
 # ---------- Chunk 3: control evaluation + findings engine ----------
 
 class ControlStatus(BaseModel):
-    component_id: str      # e.g. "azure_openai"
-    control_id: str        # e.g. "private_endpoint"
-    status: str             # "pass", "warning", or "missing"
+    component_id: str
+    control_id: str
+    status: str  # "pass", "warning", or "missing"
 
 
 class EvaluationInput(BaseModel):
     component_controls: List[ControlStatus]
 
 
-# If a control is marked "warning" instead of "missing", we treat it as
-# one severity level less urgent than the control's default severity.
 SEVERITY_DOWNGRADE = {
     "critical": "high",
     "high": "medium",
@@ -95,12 +125,20 @@ SEVERITY_DOWNGRADE = {
     "low": "low"
 }
 
+# Chunk 4: numeric weights used to calculate an overall risk score (0-100)
+SEVERITY_WEIGHT = {
+    "critical": 10,
+    "high": 6,
+    "medium": 3,
+    "low": 1
+}
+
 
 def get_component_name(component_id, components):
     for c in components:
         if c["id"] == component_id:
             return c["name"]
-    return component_id  # fallback if not found
+    return component_id
 
 
 def get_control_info(component_id, control_id, controls_catalog):
@@ -111,12 +149,37 @@ def get_control_info(component_id, control_id, controls_catalog):
     return None
 
 
+def calculate_risk_score(findings):
+    """
+    Simple, transparent scoring: sum severity weights across all findings,
+    then cap at 100. Not a statistical model — just an explainable total
+    that lets a reviewer compare assessments over time.
+    """
+    if not findings:
+        return {"score": 0, "level": "Minimal"}
+
+    total = sum(SEVERITY_WEIGHT.get(f["severity"], 0) for f in findings)
+    score = min(total, 100)
+
+    if score >= 70:
+        level = "Critical"
+    elif score >= 45:
+        level = "High"
+    elif score >= 20:
+        level = "Medium"
+    elif score > 0:
+        level = "Low"
+    else:
+        level = "Minimal"
+
+    return {"score": score, "level": level}
+
+
 @app.post("/evaluate")
 def evaluate_controls(payload: EvaluationInput):
     """
     Takes a list of component/control/status entries and generates findings
-    for anything marked "missing" or "warning". Every finding is built
-    directly from the knowledge base — nothing is inferred or guessed.
+    for anything marked "missing" or "warning", plus an overall risk score.
     """
     components = load_components()
     controls_catalog = load_controls_catalog()
@@ -127,13 +190,13 @@ def evaluate_controls(payload: EvaluationInput):
 
     for entry in payload.component_controls:
         if entry.status not in ("missing", "warning"):
-            continue  # "pass" controls don't generate findings
+            continue
 
         control_info = get_control_info(entry.component_id, entry.control_id, controls_catalog)
         crosswalk_info = crosswalk.get(entry.control_id)
 
         if control_info is None or crosswalk_info is None:
-            continue  # skip anything not found in the knowledge base
+            continue
 
         severity = crosswalk_info["default_severity"]
         if entry.status == "warning":
@@ -158,7 +221,11 @@ def evaluate_controls(payload: EvaluationInput):
         findings.append(finding)
         finding_counter += 1
 
+    risk = calculate_risk_score(findings)
+
     return {
         "findings": findings,
-        "total_findings": len(findings)
+        "total_findings": len(findings),
+        "risk_score": risk["score"],
+        "risk_level": risk["level"]
     }
