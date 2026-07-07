@@ -57,6 +57,14 @@ def root():
     return {"status": "ok", "message": "Healthcare AI Architecture Reviewer API is running"}
 
 
+@app.get("/controls")
+def get_controls_catalog():
+    """
+    Returns the full controls catalog so the frontend can build
+    a checklist for whichever components were detected.
+    """
+    return load_controls_catalog()
+
 @app.post("/detect")
 def detect_components(payload: ArchitectureInput):
     text = payload.description.lower()
