@@ -14,8 +14,15 @@ const CATEGORY_COLORS = {
 
 const STATUS_OPTIONS = ['missing', 'warning', 'pass']
 
+const SEVERITY_STYLES = {
+  critical: 'border-red-500 bg-red-500/10 text-red-400',
+  high: 'border-orange-400 bg-orange-400/10 text-orange-400',
+  medium: 'border-yellow-400 bg-yellow-400/10 text-yellow-400',
+  low: 'border-green-400 bg-green-400/10 text-green-400',
+}
+
 function App() {
-  const [step, setStep] = useState('input') // 'input' | 'diagram' | 'controls'
+  const [step, setStep] = useState('input') // 'input' | 'diagram' | 'controls' | 'findings' | 'dashboard'
   const [description, setDescription] = useState(
     `Epic EHR
 Azure OpenAI
@@ -30,8 +37,10 @@ Summaries are stored in Blob Storage and then written back to Epic.`
   )
   const [detectedComponents, setDetectedComponents] = useState([])
   const [controlsCatalog, setControlsCatalog] = useState({})
-  // controlStatuses shape: { "component_id::control_id": "missing" | "warning" | "pass" }
   const [controlStatuses, setControlStatuses] = useState({})
+  const [findings, setFindings] = useState([])
+  const [riskScore, setRiskScore] = useState(0)
+  const [riskLevel, setRiskLevel] = useState('Minimal')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -72,6 +81,41 @@ Summaries are stored in Blob Storage and then written back to Epic.`
     return controlStatuses[`${componentId}::${controlId}`] || 'pass'
   }
 
+  async function handleGenerateFindings() {
+    setLoading(true)
+    setError(null)
+    try {
+      const componentControls = []
+      for (const key in controlStatuses) {
+        const [componentId, controlId] = key.split('::')
+        componentControls.push({
+          component_id: componentId,
+          control_id: controlId,
+          status: controlStatuses[key],
+        })
+      }
+
+      const response = await fetch('http://127.0.0.1:8000/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ component_controls: componentControls }),
+      })
+      if (!response.ok) throw new Error('Request failed')
+      const data = await response.json()
+      setFindings(data.findings)
+      setRiskScore(data.risk_score)
+      setRiskLevel(data.risk_level)
+      setStep('findings')
+    } catch (err) {
+      setError('Could not reach the backend. Is it running on port 8000?')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const tabs = ['input', 'diagram', 'controls', 'findings', 'dashboard']
+  const tabLabels = ['01 Input', '02 Architecture Map', '03 Control Review', '04 Findings', '05 Dashboard']
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-8">
       <div className="max-w-3xl mx-auto">
@@ -79,8 +123,8 @@ Summaries are stored in Blob Storage and then written back to Epic.`
           Healthcare AI Architecture Reviewer
         </h1>
 
-        <div className="flex gap-2 mb-6 mt-3">
-          {['input', 'diagram', 'controls'].map((s, i) => (
+        <div className="flex gap-2 mb-6 mt-3 flex-wrap">
+          {tabs.map((s, i) => (
             <button
               key={s}
               onClick={() => detectedComponents.length > 0 && setStep(s)}
@@ -91,18 +135,18 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                   : 'border-slate-700 text-slate-400'
               }`}
             >
-              {['01 Input', '02 Architecture Map', '03 Control Review'][i]}
+              {tabLabels[i]}
             </button>
           ))}
         </div>
+
+        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
         {step === 'input' && (
           <>
             <p className="text-slate-400 text-sm mb-6">Step 1: Describe the architecture</p>
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-5">
-              <label className="text-xs text-slate-400 block mb-2">
-                Architecture description
-              </label>
+              <label className="text-xs text-slate-400 block mb-2">Architecture description</label>
               <textarea
                 className="w-full min-h-[180px] bg-slate-900 border border-slate-700 rounded-md p-3 text-sm font-mono text-slate-100 focus:outline-none focus:border-teal-400"
                 value={description}
@@ -121,15 +165,12 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                 </button>
               </div>
             </div>
-            {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
           </>
         )}
 
         {step === 'diagram' && (
           <>
-            <p className="text-slate-400 text-sm mb-6">
-              Step 2: Architecture map & trust boundaries
-            </p>
+            <p className="text-slate-400 text-sm mb-6">Step 2: Architecture map & trust boundaries</p>
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
               <div className="flex flex-col items-start gap-3">
                 {detectedComponents.map((c, index) => (
@@ -139,9 +180,7 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                       style={{ backgroundColor: CATEGORY_COLORS[c.category] || '#8FA0B5' }}
                     >
                       {c.name}
-                      <div className="text-[10px] font-mono font-normal opacity-70">
-                        {c.category}
-                      </div>
+                      <div className="text-[10px] font-mono font-normal opacity-70">{c.category}</div>
                     </div>
                     {index < detectedComponents.length - 1 && (
                       <span className="text-slate-500 text-lg">↓</span>
@@ -161,30 +200,19 @@ Summaries are stored in Blob Storage and then written back to Epic.`
 
         {step === 'controls' && (
           <>
-            <p className="text-slate-400 text-sm mb-6">
-              Step 3: Control review — mark each control's status
-            </p>
+            <p className="text-slate-400 text-sm mb-6">Step 3: Control review — mark each control's status</p>
             {detectedComponents.map((component) => {
               const controlsForComponent = controlsCatalog[component.id]
               if (!controlsForComponent) return null
-
               return (
-                <div
-                  key={component.id}
-                  className="bg-slate-800 border border-slate-700 rounded-lg mb-4 overflow-hidden"
-                >
+                <div key={component.id} className="bg-slate-800 border border-slate-700 rounded-lg mb-4 overflow-hidden">
                   <div className="px-4 py-3 bg-slate-700/40 border-b border-slate-700">
-                    <span className="text-xs font-mono font-semibold">
-                      {component.name.toUpperCase()}
-                    </span>
+                    <span className="text-xs font-mono font-semibold">{component.name.toUpperCase()}</span>
                   </div>
                   {controlsForComponent.map((control) => {
                     const status = getStatus(component.id, control.id)
                     return (
-                      <div
-                        key={control.id}
-                        className="flex justify-between items-center px-4 py-3 border-b border-slate-700/50 last:border-b-0"
-                      >
+                      <div key={control.id} className="flex justify-between items-center px-4 py-3 border-b border-slate-700/50 last:border-b-0">
                         <span className="text-sm">{control.name}</span>
                         <div className="flex gap-1 bg-slate-900 border border-slate-700 rounded-md p-0.5">
                           {STATUS_OPTIONS.map((opt) => (
@@ -193,11 +221,9 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                               onClick={() => setStatus(component.id, control.id, opt)}
                               className={`text-[10px] font-mono px-2.5 py-1 rounded ${
                                 status === opt
-                                  ? opt === 'missing'
-                                    ? 'bg-red-500/20 text-red-400'
-                                    : opt === 'warning'
-                                    ? 'bg-yellow-500/20 text-yellow-400'
-                                    : 'bg-green-500/20 text-green-400'
+                                  ? opt === 'missing' ? 'bg-red-500/20 text-red-400'
+                                  : opt === 'warning' ? 'bg-yellow-500/20 text-yellow-400'
+                                  : 'bg-green-500/20 text-green-400'
                                   : 'text-slate-500'
                               }`}
                             >
@@ -211,6 +237,94 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                 </div>
               )
             })}
+            <button
+              onClick={handleGenerateFindings}
+              disabled={loading}
+              className="bg-teal-400 hover:bg-teal-300 text-slate-900 font-semibold text-sm px-4 py-2 rounded-md disabled:opacity-50"
+            >
+              {loading ? 'Generating...' : 'Generate Findings →'}
+            </button>
+          </>
+        )}
+
+        {step === 'findings' && (
+          <>
+            <p className="text-slate-400 text-sm mb-6">Step 4: Findings ({findings.length})</p>
+            {findings.length === 0 && (
+              <p className="text-slate-500 text-sm">No findings — all reviewed controls passed.</p>
+            )}
+            {findings.map((f) => (
+              <div key={f.finding_id} className={`border-l-4 rounded-lg mb-4 p-4 bg-slate-800 border border-slate-700 ${SEVERITY_STYLES[f.severity]?.split(' ')[0] || ''}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="text-[10px] font-mono text-slate-500">{f.finding_id}</div>
+                    <div className="text-sm font-semibold mt-1">{f.control_name} — {f.component}</div>
+                  </div>
+                  <span className={`text-[10px] font-mono font-semibold px-2 py-1 rounded ${SEVERITY_STYLES[f.severity] || ''}`}>
+                    {f.severity.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-3">{f.description}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {f.framework_mapping.hipaa && (
+                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">HIPAA {f.framework_mapping.hipaa}</span>
+                  )}
+                  {f.framework_mapping.nist_800_53 && (
+                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">NIST 800-53 {f.framework_mapping.nist_800_53.join(', ')}</span>
+                  )}
+                  {f.framework_mapping.owasp_llm_top10 && f.framework_mapping.owasp_llm_top10 !== 'N/A' && (
+                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">{f.framework_mapping.owasp_llm_top10}</span>
+                  )}
+                  {f.framework_mapping.nist_ai_rmf && (
+                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">AI RMF {f.framework_mapping.nist_ai_rmf}</span>
+                  )}
+                  {f.framework_mapping.mitre_attack && (
+                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">{f.framework_mapping.mitre_attack}</span>
+                  )}
+                  {f.framework_mapping.mitre_atlas && f.framework_mapping.mitre_atlas !== 'N/A' && (
+                    <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">{f.framework_mapping.mitre_atlas}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => setStep('dashboard')}
+              className="bg-teal-400 hover:bg-teal-300 text-slate-900 font-semibold text-sm px-4 py-2 rounded-md"
+            >
+              View Dashboard →
+            </button>
+          </>
+        )}
+
+        {step === 'dashboard' && (
+          <>
+            <p className="text-slate-400 text-sm mb-6">Step 5: Executive dashboard</p>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                <div className="text-[10px] font-mono text-slate-500 uppercase">Risk Score</div>
+                <div className="text-3xl font-bold mt-1 text-teal-400">{riskScore}/100</div>
+                <div className="text-xs text-slate-500 mt-1">{riskLevel}</div>
+              </div>
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                <div className="text-[10px] font-mono text-slate-500 uppercase">Total Findings</div>
+                <div className="text-3xl font-bold mt-1">{findings.length}</div>
+                <div className="text-xs text-slate-500 mt-1">
+                  {findings.filter((f) => f.severity === 'critical').length} critical
+                </div>
+              </div>
+            </div>
+            <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+              <div className="text-[10px] font-mono text-slate-500 uppercase mb-3">Findings by severity</div>
+              {['critical', 'high', 'medium', 'low'].map((sev) => {
+                const count = findings.filter((f) => f.severity === sev).length
+                return (
+                  <div key={sev} className="flex justify-between items-center text-xs mb-2">
+                    <span className="text-slate-400 capitalize">{sev}</span>
+                    <span className="font-mono text-slate-300">{count}</span>
+                  </div>
+                )
+              })}
+            </div>
           </>
         )}
       </div>
