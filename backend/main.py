@@ -237,3 +237,84 @@ def evaluate_controls(payload: EvaluationInput):
         "risk_score": risk["score"],
         "risk_level": risk["level"]
     }
+# ---------- Chunk 9: JSON/CSV export ----------
+
+from fastapi.responses import StreamingResponse
+from fastapi import Query
+import csv
+import io
+import json
+from datetime import datetime
+
+
+class FrameworkMapping(BaseModel):
+    hipaa: str | None = None
+    nist_800_53: List[str] | None = None
+    owasp_llm_top10: str | None = None
+    nist_ai_rmf: str | None = None
+    mitre_attack: str | None = None
+    mitre_atlas: str | None = None
+
+
+class Finding(BaseModel):
+    finding_id: str
+    severity: str
+    status: str
+    component: str
+    control_name: str
+    description: str
+    framework_mapping: FrameworkMapping
+
+
+class ExportPayload(BaseModel):
+    findings: List[Finding]
+    total_findings: int
+    risk_score: float
+    risk_level: str
+
+
+@app.post("/export")
+def export_findings(payload: ExportPayload, format: str = Query("json", pattern="^(json|csv)$")):
+    """
+    Takes the findings data the frontend already generated via /evaluate
+    and returns it as a downloadable JSON or CSV file. This does not
+    re-run detection or evaluation logic -- it only formats results
+    that were already produced deterministically, so nothing new is
+    invented at export time.
+    """
+    timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+
+    if format == "json":
+        json_bytes = json.dumps(payload.model_dump(), indent=2).encode("utf-8")
+        return StreamingResponse(
+            io.BytesIO(json_bytes),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="findings-{timestamp}.json"'}
+        )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Finding ID", "Severity", "Status", "Component", "Control Name",
+        "Description", "HIPAA", "NIST 800-53", "OWASP LLM Top 10",
+        "NIST AI RMF", "MITRE ATT&CK", "MITRE ATLAS"
+    ])
+    for f in payload.findings:
+        fm = f.framework_mapping
+        writer.writerow([
+            f.finding_id, f.severity, f.status, f.component, f.control_name,
+            f.description, fm.hipaa or "", ", ".join(fm.nist_800_53) if fm.nist_800_53 else "",
+            fm.owasp_llm_top10 or "", fm.nist_ai_rmf or "",
+            fm.mitre_attack or "", fm.mitre_atlas or ""
+        ])
+    writer.writerow([])
+    writer.writerow(["Total Findings", payload.total_findings])
+    writer.writerow(["Risk Score", payload.risk_score])
+    writer.writerow(["Risk Level", payload.risk_level])
+
+    csv_bytes = output.getvalue().encode("utf-8-sig")
+    return StreamingResponse(
+        io.BytesIO(csv_bytes),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="findings-{timestamp}.csv"'}
+    )

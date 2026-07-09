@@ -113,6 +113,37 @@ Summaries are stored in Blob Storage and then written back to Epic.`
     }
   }
 
+  async function handleExportFindings(format) {
+  try {
+    const payload = {
+      findings: findings,
+      total_findings: findings.length,
+      risk_score: riskScore,
+      risk_level: riskLevel
+    }
+
+    const response = await fetch(`http://127.0.0.1:8000/export?format=${format}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) throw new Error('Export failed')
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `findings.${format}`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    setError('Export failed. Is the backend running on port 8000?')
+  }
+}
+
   const tabs = ['input', 'diagram', 'controls', 'findings', 'dashboard']
   const tabLabels = ['01 Input', '02 Architecture Map', '03 Control Review', '04 Findings', '05 Dashboard']
 
@@ -250,6 +281,20 @@ Summaries are stored in Blob Storage and then written back to Epic.`
         {step === 'findings' && (
           <>
             <p className="text-slate-400 text-sm mb-6">Step 4: Findings ({findings.length})</p>
+            <div className="flex gap-3 mb-6">
+  <button
+    onClick={() => handleExportFindings('json')}
+    className="bg-slate-700 hover:bg-slate-600 text-sm px-4 py-2 rounded-lg"
+  >
+    Export JSON
+  </button>
+  <button
+    onClick={() => handleExportFindings('csv')}
+    className="bg-slate-700 hover:bg-slate-600 text-sm px-4 py-2 rounded-lg"
+  >
+    Export CSV
+  </button>
+</div>
             {findings.length === 0 && (
               <p className="text-slate-500 text-sm">No findings — all reviewed controls passed.</p>
             )}
