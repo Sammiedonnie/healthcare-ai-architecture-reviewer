@@ -95,7 +95,7 @@ Summaries are stored in Blob Storage and then written back to Epic.`
         })
       }
 
-      const response = await fetch('http://127.0.0.1:8000/evaluate', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/evaluate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ component_controls: componentControls }),
@@ -122,7 +122,7 @@ Summaries are stored in Blob Storage and then written back to Epic.`
       risk_level: riskLevel
     }
 
-    const response = await fetch(`http://127.0.0.1:8000/export?format=${format}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/export?format=${format}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
