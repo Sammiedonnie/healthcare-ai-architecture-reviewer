@@ -48,7 +48,7 @@ Summaries are stored in Blob Storage and then written back to Epic.`
     setLoading(true)
     setError(null)
     try {
-      const detectResponse = await fetch('http://127.0.0.1:8000/detect', {
+      const detectResponse = await fetch(`${import.meta.env.VITE_API_URL}/detect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description }),
@@ -57,7 +57,7 @@ Summaries are stored in Blob Storage and then written back to Epic.`
       const detectData = await detectResponse.json()
       setDetectedComponents(detectData.detected_components)
 
-      const controlsResponse = await fetch('http://127.0.0.1:8000/controls')
+      const controlsResponse = await fetch(`${import.meta.env.VITE_API_URL}/controls`)
       if (!controlsResponse.ok) throw new Error('Request failed')
       const controlsData = await controlsResponse.json()
       setControlsCatalog(controlsData)
