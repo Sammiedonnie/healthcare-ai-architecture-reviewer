@@ -103,3 +103,48 @@ crosswalk:
     nist_ai_rmf: "GOVERN 4.1"
     mitre_attack: "T1078: Valid Accounts"
     mitre_atlas: "N/A"
+    
+    rbac:
+    default_severity: high
+    hipaa: "§164.312(a)(1) Access Control"
+    nist_800_53: ["AC-3", "AC-6"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1552: Unsecured Credentials"
+    mitre_atlas: "AML.T0012: Valid Accounts"
+
+  soft_delete:
+    default_severity: medium
+    hipaa: "§164.312(c)(1) Integrity"
+    nist_800_53: ["CP-9", "SI-12"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MANAGE 2.3"
+    mitre_attack: "T1485: Data Destruction"
+    mitre_atlas: "AML.T0059: Erode Dataset Integrity"
+
+  purge_protection:
+    default_severity: medium
+    hipaa: "§164.308(a)(7) Contingency Plan"
+    nist_800_53: ["CP-9", "CP-10"]
+    owasp_llm_top10: "N/A"
+    nist_ai_rmf: "GOVERN 4.1"
+    mitre_attack: "T1485: Data Destruction"
+    mitre_atlas: "N/A"
+
+  detection_rules:
+    default_severity: high
+    hipaa: "§164.312(b) Audit Controls"
+    nist_800_53: ["SI-4", "AU-6"]
+    owasp_llm_top10: "LLM06: Sensitive Information Disclosure"
+    nist_ai_rmf: "MEASURE 2.7"
+    mitre_attack: "T1562: Impair Defenses"
+    mitre_atlas: "AML.T0024: Exfiltration via Cyber Means"
+
+  log_retention:
+    default_severity: medium
+    hipaa: "§164.312(b) Audit Controls"
+    nist_800_53: ["AU-11"]
+    owasp_llm_top10: "N/A"
+    nist_ai_rmf: "MEASURE 2.7"
+    mitre_attack: "T1070: Indicator Removal"
+    mitre_atlas: "N/A"
