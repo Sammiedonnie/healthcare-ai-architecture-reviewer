@@ -217,6 +217,7 @@ def evaluate_controls(payload: EvaluationInput):
             "component": get_component_name(entry.component_id, components),
             "control_name": control_info["name"],
             "description": control_info["description"],
+            "remediation": control_info.get("remediation"),
             "framework_mapping": {
                 "hipaa": crosswalk_info.get("hipaa"),
                 "nist_800_53": crosswalk_info.get("nist_800_53"),

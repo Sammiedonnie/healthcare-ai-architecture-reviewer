@@ -8,59 +8,76 @@ controls:
     - id: private_endpoint
       name: "Private Endpoint"
       description: "Restricts network access to a private connection instead of the public internet."
+      remediation: "In the Azure Portal, go to this resource's Networking settings and enable a private endpoint connection."
     - id: customer_managed_keys
       name: "Customer Managed Keys"
       description: "Encryption keys are owned and controlled by the organization, not the cloud provider."
+      remediation: "In the Azure Portal, go to Encryption settings and configure a customer-managed key stored in Azure Key Vault."
     - id: managed_identity
       name: "Managed Identity"
       description: "Service authenticates using an Azure-managed identity instead of stored credentials."
+      remediation: "In the Azure Portal, go to Identity settings and enable a system-assigned or user-assigned managed identity."
     - id: prompt_injection_filtering
       name: "Prompt Injection Filtering"
       description: "Input filtering to detect and block malicious or manipulative prompt content."
+      remediation: "Enable Azure AI Content Safety prompt shields, or add input validation logic before requests reach the model."
     - id: diagnostic_logging
       name: "Diagnostic Logging"
       description: "Detailed logs of requests and responses are captured for audit and detection."
+      remediation: "In the Azure Portal, go to Diagnostic settings and send logs to a Log Analytics workspace."
 
   blob_storage:
     - id: private_endpoint
       name: "Private Endpoint"
       description: "Restricts network access to a private connection instead of the public internet."
+      remediation: "In the Azure Portal, go to this resource's Networking settings and enable a private endpoint connection."
     - id: encryption_at_rest
       name: "Encryption at Rest"
       description: "Stored data is encrypted while sitting in the storage account."
+      remediation: "In the Azure Portal, confirm encryption is enabled under Encryption settings; use customer-managed keys if required."
     - id: soft_delete_versioning
       name: "Soft Delete / Versioning"
       description: "Deleted or overwritten data can be recovered within a retention window."
+      remediation: "In the Azure Portal, go to Data protection settings and enable soft delete and blob versioning."
     - id: sas_token_restrictions
       name: "SAS Token Restrictions"
       description: "Shared access signature tokens are scoped, time-limited, and restricted in permission."
+      remediation: "Review SAS policies and ensure tokens have short expirations, minimal permissions, and IP restrictions where possible."
 
   entra_id:
     - id: conditional_access
       name: "Conditional Access"
       description: "Access policies enforce conditions such as device compliance or location."
+      remediation: "In Entra ID, go to Conditional Access and create a policy requiring compliant devices or trusted locations."
     - id: pim
       name: "Privileged Identity Management (PIM)"
       description: "Privileged roles are time-bound and require approval rather than being permanently assigned."
+      remediation: "In Entra ID, enable Privileged Identity Management and configure eligible (not permanent) role assignments."
     - id: break_glass_accounts
       name: "Break Glass Accounts"
       description: "Emergency access accounts exist and are monitored in case of identity system lockout."
+      remediation: "Create at least two emergency access accounts excluded from Conditional Access, and monitor their sign-ins closely."
 
   key_vault:
     - id: rbac
       name: "RBAC"
       description: "Role-based access control governs who can read or manage secrets and keys."
+      remediation: "In the Azure Portal, go to Access configuration and switch to Azure RBAC instead of vault access policies."
     - id: soft_delete
       name: "Soft Delete"
       description: "Deleted secrets/keys can be recovered within a retention window."
+      remediation: "In the Azure Portal, confirm Soft delete is enabled under this Key Vault's properties."
     - id: purge_protection
       name: "Purge Protection"
       description: "Prevents permanent deletion of secrets/keys before the retention period ends."
+      remediation: "In the Azure Portal, go to this Key Vault's properties and enable Purge protection."
 
   sentinel:
     - id: detection_rules
       name: "Detection Rules"
       description: "Automated rules exist to flag suspicious activity across connected data sources."
+      remediation: "In Microsoft Sentinel, go to Analytics and enable relevant scheduled or near-real-time detection rules."
     - id: log_retention
       name: "Log Retention"
       description: "Logs are retained for a defined period sufficient for investigation and compliance."
+      remediation: "In the Log Analytics workspace settings, set a retention period that meets your compliance requirements (e.g., 90+ days)."

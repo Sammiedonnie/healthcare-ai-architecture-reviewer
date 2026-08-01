@@ -244,7 +244,10 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                     const status = getStatus(component.id, control.id)
                     return (
                       <div key={control.id} className="flex justify-between items-center px-4 py-3 border-b border-slate-700/50 last:border-b-0">
-                        <span className="text-sm">{control.name}</span>
+                        <div className="flex flex-col gap-0.5 pr-4">
+  <span className="text-sm">{control.name}</span>
+  <span className="text-xs text-slate-500">{control.description}</span>
+</div>
                         <div className="flex gap-1 bg-slate-900 border border-slate-700 rounded-md p-0.5">
                           {STATUS_OPTIONS.map((opt) => (
                             <button
@@ -310,6 +313,10 @@ Summaries are stored in Blob Storage and then written back to Epic.`
                   </span>
                 </div>
                 <p className="text-xs text-slate-400 mb-3">{f.description}</p>
+                <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Status: {f.status}</p>
+                {f.remediation && (
+                  <p className="text-xs text-emerald-400 mb-3">Remediation: {f.remediation}</p>
+                  )}
                 <div className="flex flex-wrap gap-1.5">
                   {f.framework_mapping.hipaa && (
                     <span className="text-[10px] font-mono bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-400">HIPAA {f.framework_mapping.hipaa}</span>
