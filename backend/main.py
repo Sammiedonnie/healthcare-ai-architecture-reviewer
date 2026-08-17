@@ -4,12 +4,16 @@
 # Chunk 3: control evaluation + findings engine
 # Chunk 4: PHI detection + risk scoring
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 import yaml
 import os
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI(title="Healthcare AI Architecture Reviewer API")
 
@@ -21,6 +25,18 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "Authorization"],
 )
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 KNOWLEDGE_BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "knowledge_base")
 
@@ -68,7 +84,8 @@ def get_controls_catalog():
     return load_controls_catalog()
 
 @app.post("/detect")
-def detect_components(payload: ArchitectureInput):
+@limiter.limit("10/minute")
+def detect_components(request: Request, payload: ArchitectureInput):
     text = payload.description.lower()
     components = load_components()
 
@@ -92,7 +109,8 @@ def detect_components(payload: ArchitectureInput):
 # ---------- Chunk 4: PHI detection ----------
 
 @app.post("/phi-scan")
-def phi_scan(payload: ArchitectureInput):
+@limiter.limit("10/minute")
+def phi_scan(request: Request, payload: ArchitectureInput):
     """
     Scans the architecture description text for PHI indicator keywords.
     This is a keyword match, not a clinical NLP model, so results are
@@ -186,7 +204,8 @@ def calculate_risk_score(findings):
 
 
 @app.post("/evaluate")
-def evaluate_controls(payload: EvaluationInput):
+@limiter.limit("10/minute")
+def evaluate_controls(request: Request, payload: EvaluationInput):
     """
     Takes a list of component/control/status entries and generates findings
     for anything marked "missing" or "warning", plus an overall risk score.
@@ -277,7 +296,8 @@ class ExportPayload(BaseModel):
 
 
 @app.post("/export")
-def export_findings(payload: ExportPayload, format: str = Query("json", pattern="^(json|csv)$")):
+@limiter.limit("10/minute")
+def export_findings(request: Request, payload: ExportPayload, format: str = Query("json", pattern="^(json|csv)$")):
     """
     Takes the findings data the frontend already generated via /evaluate
     and returns it as a downloadable JSON or CSV file. This does not
