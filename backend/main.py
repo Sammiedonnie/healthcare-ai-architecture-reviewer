@@ -6,14 +6,13 @@
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 import yaml
 import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI(title="Healthcare AI Architecture Reviewer API")
 
@@ -41,11 +40,18 @@ async def add_security_headers(request, call_next):
 KNOWLEDGE_BASE_PATH = os.path.join(os.path.dirname(__file__), "..", "knowledge_base")
 
 
+from fastapi import HTTPException
+
 def load_yaml(filename):
     """Generic helper to load any YAML file from the knowledge_base folder."""
     file_path = os.path.join(KNOWLEDGE_BASE_PATH, filename)
-    with open(file_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="A required configuration file is missing.")
+    except yaml.YAMLError:
+        raise HTTPException(status_code=500, detail="A configuration file is malformed.")
 
 
 def load_components():
@@ -67,7 +73,7 @@ def load_phi_indicators():
 # ---------- Chunk 2: component detection ----------
 
 class ArchitectureInput(BaseModel):
-    description: str
+    description: str = Field(..., max_length=5000)
 
 
 @app.get("/")
@@ -294,6 +300,16 @@ class ExportPayload(BaseModel):
     risk_score: float
     risk_level: str
 
+def sanitize_csv_field(value: str) -> str:
+    """
+    Prevents CSV/formula injection: if a field starts with a character
+    that spreadsheet apps (Excel, Google Sheets) interpret as a formula
+    trigger, prefix it with a single quote so it's treated as plain text.
+    """
+    if value and value[0] in ("=", "+", "-", "@"):
+        return "'" + value
+    return value
+
 
 @app.post("/export")
 @limiter.limit("10/minute")
@@ -325,10 +341,18 @@ def export_findings(request: Request, payload: ExportPayload, format: str = Quer
     for f in payload.findings:
         fm = f.framework_mapping
         writer.writerow([
-            f.finding_id, f.severity, f.status, f.component, f.control_name,
-            f.description, fm.hipaa or "", ", ".join(fm.nist_800_53) if fm.nist_800_53 else "",
-            fm.owasp_llm_top10 or "", fm.nist_ai_rmf or "",
-            fm.mitre_attack or "", fm.mitre_atlas or ""
+            sanitize_csv_field(f.finding_id),
+            sanitize_csv_field(f.severity),
+            sanitize_csv_field(f.status),
+            sanitize_csv_field(f.component),
+            sanitize_csv_field(f.control_name),
+            sanitize_csv_field(f.description),
+            sanitize_csv_field(fm.hipaa or ""),
+            sanitize_csv_field(", ".join(fm.nist_800_53) if fm.nist_800_53 else ""),
+            sanitize_csv_field(fm.owasp_llm_top10 or ""),
+            sanitize_csv_field(fm.nist_ai_rmf or ""),
+            sanitize_csv_field(fm.mitre_attack or ""),
+            sanitize_csv_field(fm.mitre_atlas or "")
         ])
     writer.writerow([])
     writer.writerow(["Total Findings", payload.total_findings])
